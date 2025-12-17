@@ -1,0 +1,25 @@
+# Debian-based Dockerfile inspired by your base Dockerfile
+FROM debian:bookworm-slim
+
+# Installer Node.js via NodeSource
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg build-essential \
+ && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+
+# Préparer les dossiers comme dans votre Dockerfile de base
+RUN mkdir /app && mkdir /app/src
+
+WORKDIR /app
+
+# Copier package.json et installer les dépendances
+COPY ./package.json .
+RUN npm install
+
+# Copier uniquement le code source dans /app/src
+COPY ./src ./src
+
+# Commande de démarrage identique à votre Dockerfile de base
+CMD ["npm", "run", "dev"]
+

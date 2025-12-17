@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maets - Gestion de Bibliothèque</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .section { margin-bottom: 20px; border: 1px solid #ccc; padding: 15px; border-radius: 5px; }
+        .hidden { display: none; }
+        button { cursor: pointer; padding: 5px 10px; }
+        input { padding: 5px; margin: 5px 0; }
+        .game-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Maets - Bibliothèque de Jeux</h1>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="section">
+        <h2>Connexion</h2>
+        <input type="email" id="email" placeholder="Email" value="alice@maets.com">
+        <input type="password" id="password" placeholder="Mot de passe" value="password123">
+        <button onclick="login()">Se connecter</button>
+        <p id="loginMsg"></p>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="appSection" class="section hidden">
+        <p>Connecté en tant que <span id="userEmail"></span> <button onclick="logout()">Déconnexion</button></p>
+        
+        <div class="section">
+            <h3>Ma Bibliothèque</h3>
+            <button onclick="loadLibrary()">Rafraîchir</button>
+            <div id="myLibraryList"></div>
+        </div>
+
+        <div class="section">
+            <h3>Tous les Jeux Disponibles</h3>
+            <button onclick="loadGames()">Rafraîchir</button>
+            <div id="allGamesList"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        const API_URL = '/api';
+
+        // Check if already logged in
+        if (token) {
+            showApp();
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('loginMsg');
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    msg.textContent = '';
+                    showApp();
+                } else {
+                    msg.textContent = data.error || 'Erreur de connexion';
+                    msg.className = 'error';
+                }
+            } catch (err) {
+                msg.textContent = 'Erreur réseau';
+                msg.className = 'error';
+            }
+        }
+
+        function logout() {
+            token = null;
+            localStorage.removeItem('token');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('appSection').classList.add('hidden');
+        }
+
+        function showApp() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = 'Utilisateur'; // On pourrait décoder le token pour avoir l'email
+            loadGames();
+            loadLibrary();
+        }
+
+        async function loadGames() {
+            const list = document.getElementById('allGamesList');
+            list.innerHTML = 'Chargement...';
+            try {
+                const res = await fetch(`${API_URL}/games`);
+                const games = await res.json();
+                
+                list.innerHTML = '';
+                games.forEach(game => {
+                    const div = document.createElement('div');
+                    div.className = 'game-item';
+                    div.innerHTML = `
+                        <span><strong>${game.title}</strong> (${game.publisher})</span>
+                        <button onclick="addToLibrary(${game.id})">Ajouter</button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                list.innerHTML = '<span class="error">Erreur chargement jeux</span>';
+            }
+        }
+
+        async function loadLibrary() {
+            const list = document.getElementById('myLibraryList');
+            list.innerHTML = 'Chargement...';
+            try {
+                const res = await fetch(`${API_URL}/me/library`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const games = await res.json();
+                
+                list.innerHTML = '';
+                if (games.length === 0) {
+                    list.innerHTML = '<i>Aucun jeu dans la bibliothèque.</i>';
+                    return;
+                }
+
+                games.forEach(game => {
+                    const div = document.createElement('div');
+                    div.className = 'game-item';
+                    div.innerHTML = `
+                        <span><strong>${game.title}</strong></span>
+                        <span style="font-size: 0.8em; color: #666;">Ajouté le ${new Date(game.dateAjout).toLocaleDateString()}</span>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                list.innerHTML = '<span class="error">Erreur chargement bibliothèque</span>';
+            }
+        }
+
+        async function addToLibrary(gameId) {
+            if (!confirm('Ajouter ce jeu à votre bibliothèque ?')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/me/library/${gameId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    alert('Jeu ajouté !');
+                    loadLibrary();
+                } else {
+                    const data = await res.json();
+                    alert('Erreur: ' + (data.error || 'Impossible d\'ajouter'));
+                }
+            } catch (err) {
+                alert('Erreur réseau');
+            }
+        }
+    </script>
+</body>
+</html>

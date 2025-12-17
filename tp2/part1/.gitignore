@@ -1,0 +1,71 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+
+# Runtime / PID files
+pids/
+*.pid
+
+# Coverage
+coverage/
+.nyc_output/
+lcov-report/
+
+# Build / output
+dist/
+build/
+.next/
+.nuxt/
+.parcel-cache/
+.cache/
+out/
+
+# Dependency directories
+.pnp/
+.pnp.js
+
+# Environment files
+.env
+
+# Database dumps & backups
+backups/
+*.sql
+projet-backend.zip
+data/
+
+# SSL / certs
+ssl/
+*.pem
+*.pfx
+
+# VS Code
+.vscode/
+
+# IDE
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Test / cache
+.eslintcache
+.mocha
+
+# Misc
+*.bak
+*.old
+*.log
